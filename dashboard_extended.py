@@ -338,13 +338,16 @@ def show_relationship_analysis(df):
         if st.button("📈 Age vs WBC Scatter", key="age_wbc_scatter"):
             if all(col in df.columns for col in ['Age', 'WBC', 'Diagnosis']):
                 df_clean = df.dropna(subset=['Age', 'WBC', 'Diagnosis'])
-                fig = px.scatter(df_clean, x='Age', y='WBC',
-                               color='Diagnosis',
-                               size='Hemoglobin' if 'Hemoglobin' in df.columns else None,
-                               title='Age vs WBC (sized by Hemoglobin)',
-                               trendline='ols',
-                               hover_data=['Diagnosis'])
-                st.plotly_chart(fig, width='stretch')
+                if len(df_clean) > 0:
+                    size_col = 'Hemoglobin' if 'Hemoglobin' in df.columns else None
+                    df_clean_no_na = df_clean.dropna(subset=['Age', 'WBC']) if size_col else df_clean
+                    
+                    fig = px.scatter(df_clean_no_na, x='Age', y='WBC',
+                                   color='Diagnosis',
+                                   title='Age vs WBC by Diagnosis Type',
+                                   hover_data=['Diagnosis'])
+                    fig.update_layout(height=500)
+                    st.plotly_chart(fig, width='stretch')
     
     # Pairplot section
     if st.button("🎨 Generate Pairplot (Numeric Variables)", key="pairplot"):
