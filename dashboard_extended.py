@@ -1,6 +1,6 @@
 """
-Blood Cancer Analysis Dashboard - INTERACTIVE VERSION WITH BUTTONS
-Advanced Interactive Dashboard with Button-Based Workflow
+Blood Cancer Analysis Dashboard - SUPER INTERACTIVE VERSION
+Advanced Dashboard with Multiple Visualization Types
 Data Visualization Elective - Semester Project
 """
 
@@ -18,7 +18,7 @@ from io import BytesIO
 
 # Page Configuration
 st.set_page_config(
-    page_title="Blood Cancer Analysis Dashboard - Interactive",
+    page_title="Blood Cancer Analysis Dashboard",
     page_icon="🩸",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -27,16 +27,17 @@ st.set_page_config(
 # Custom CSS
 st.markdown("""
 <style>
-    .main-header { font-size: 2.5em; color: #1f77b4; font-weight: bold; }
+    .main-header { font-size: 2.5em; color: #1f77b4; font-weight: bold; text-align: center; }
     .section-header { font-size: 1.8em; color: #2ca02c; margin-top: 20px; }
-    .metric-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; }
+    .metric-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center; }
     .insight-box { background: #f0f8ff; border-left: 4px solid #1f77b4; padding: 15px; border-radius: 5px; margin: 10px 0; }
     .warning-box { background: #fff3cd; border-left: 4px solid #ff9800; padding: 15px; border-radius: 5px; }
     .success-box { background: #d4edda; border-left: 4px solid #28a745; padding: 15px; border-radius: 5px; }
+    .stButton>button { width: 100%; }
 </style>
 """, unsafe_allow_html=True)
 
-# ==================== DATA LOADING & CACHING ====================
+# ==================== DATA LOADING ====================
 @st.cache_data
 def load_data():
     """Load dataset with realistic missing values."""
@@ -92,6 +93,7 @@ def load_data():
 
 def clean_data(df):
     """Enhanced data cleaning."""
+    df = df.copy()
     cleaning_report = {}
     
     # Remove duplicates
@@ -111,7 +113,6 @@ def clean_data(df):
             df[col].fillna(df[col].mode()[0] if len(df[col].mode()) > 0 else 'Unknown', inplace=True)
     
     cleaning_report['missing_handled'] = True
-    cleaning_report['outliers_detected'] = 0
     
     return df, cleaning_report
 
@@ -125,96 +126,97 @@ def show_home():
         st.markdown("""
         <div class="warning-box">
         <h3>⚠️ Getting Started</h3>
-        <p>Please click the <strong>"🔄 Load Dataset"</strong> button in the sidebar to begin.</p>
+        <p>Click <strong>"🔄 Load Dataset"</strong> in the sidebar to begin your analysis journey!</p>
         </div>
         """, unsafe_allow_html=True)
         
         st.markdown("""
-        ### 📋 Project Workflow
+        ### 🎯 Project Features
         
-        **Step 1:** Load Dataset - Click the button in sidebar  
-        **Step 2:** Clean Dataset - Process and prepare data  
-        **Step 3:** Explore Analytics - View visualizations  
-        **Step 4:** Generate Insights - Review findings  
-        **Step 5:** Export Results - Download reports
+        **📊 Comprehensive Visualizations:**
+        - Interactive charts and graphs
+        - 3D scatter plots
+        - Animated visualizations
+        - Sunburst and treemap charts
+        - Advanced statistical plots
+        
+        **🔬 Statistical Analysis:**
+        - ANOVA testing
+        - Correlation analysis
+        - Distribution analysis
+        - Group comparisons
+        
+        **📈 Real-time Insights:**
+        - Dynamic data loading
+        - Interactive filtering
+        - Button-based workflow
+        - Export capabilities
         """)
         return
     
-    st.success("✅ Dataset loaded successfully!")
+    st.success("✅ Dataset loaded and ready for analysis!")
     
     if st.session_state.get('data_cleaned', False):
-        st.success("✅ Dataset cleaned and ready for analysis!")
+        st.success("✅ Data cleaning completed successfully!")
     
-    st.markdown("""
-    ### 🎯 Project Objectives
-    
-    1. Analyze demographic patterns in blood cancer patients
-    2. Examine clinical laboratory values across diagnoses
-    3. Identify age-related disease correlations
-    4. Determine most prevalent cancer types
-    5. Compare gender-based clinical differences
-    6. Assess overall data quality
-    """)
-    
-    # Show summary metrics
+    # Dashboard metrics
     if st.session_state.get('df') is not None:
         df = st.session_state['df']
         
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4, col5 = st.columns(5)
         
         with col1:
-            st.metric("Total Patients", len(df))
+            st.metric("📊 Total Patients", f"{len(df):,}")
         with col2:
-            st.metric("Variables", len(df.columns))
+            st.metric("📋 Variables", len(df.columns))
         with col3:
             if 'Diagnosis' in df.columns:
-                st.metric("Cancer Types", df['Diagnosis'].nunique())
+                st.metric("🩺 Cancer Types", df['Diagnosis'].nunique())
         with col4:
-            st.metric("Missing Values", df.isnull().sum().sum())
+            if 'Age' in df.columns:
+                st.metric("👥 Avg Age", f"{df['Age'].mean():.1f} yrs")
+        with col5:
+            st.metric("✨ Data Quality", f"{100 - (df.isnull().sum().sum() / (len(df) * len(df.columns)) * 100):.1f}%")
 
 def show_data_overview():
     """Data overview page."""
-    st.markdown('<h2 class="section-header">📊 Data Overview</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="section-header">📊 Data Overview & Exploration</h2>', unsafe_allow_html=True)
     
     if not st.session_state.get('data_loaded', False):
         st.warning("⚠️ Please load the dataset first using the sidebar button.")
         return
     
-    df = st.session_state.get('df_original', st.session_state.get('df'))
+    df = st.session_state.get('df')
     
-    if df is None:
-        st.error("No data available.")
-        return
+    # Dataset preview with toggle
+    if st.checkbox("📋 Show Dataset Preview", value=True):
+        st.markdown("### First 15 Rows")
+        st.dataframe(df.head(15), use_container_width=True, height=400)
     
-    # Show/Hide buttons
-    show_head = st.checkbox("📋 Show First 10 Rows", value=True)
-    show_info = st.checkbox("ℹ️ Show Dataset Information", value=True)
-    show_stats = st.checkbox("📊 Show Statistical Summary", value=False)
-    
-    if show_head:
-        st.markdown("### First 10 Rows")
-        st.dataframe(df.head(10), use_container_width=True)
-    
-    if show_info:
-        st.markdown("### Dataset Information")
+    # Column information
+    if st.checkbox("ℹ️ Show Column Information"):
         col1, col2 = st.columns(2)
         
         with col1:
-            st.write(f"**Shape:** {df.shape[0]} rows × {df.shape[1]} columns")
-            st.write(f"**Missing Values:** {df.isnull().sum().sum()}")
+            st.markdown("### Numeric Columns")
+            numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+            for col in numeric_cols:
+                st.write(f"• {col}: {df[col].dtype}")
         
         with col2:
-            st.write(f"**Duplicates:** {df.duplicated().sum()}")
-            st.write(f"**Memory Usage:** {df.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
+            st.markdown("### Categorical Columns")
+            cat_cols = df.select_dtypes(include=['object']).columns.tolist()
+            for col in cat_cols:
+                st.write(f"• {col}: {df[col].nunique()} unique values")
     
-    if show_stats:
-        st.markdown("### Statistical Summary")
-        if st.button("🔄 Generate Statistics"):
+    # Interactive statistics
+    if st.checkbox("📊 Show Statistical Summary"):
+        if st.button("🔄 Generate Statistics", key="gen_stats"):
             st.dataframe(df.describe(), use_container_width=True)
 
-def show_analytics():
-    """Analytics page with button-based visualizations."""
-    st.markdown('<h2 class="section-header">📈 Advanced Analytics</h2>', unsafe_allow_html=True)
+def show_visualizations():
+    """Advanced visualizations page."""
+    st.markdown('<h2 class="section-header">📈 Advanced Data Visualizations</h2>', unsafe_allow_html=True)
     
     if not st.session_state.get('data_loaded', False):
         st.warning("⚠️ Please load the dataset first.")
@@ -222,106 +224,225 @@ def show_analytics():
     
     df = st.session_state.get('df')
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 Distributions", "🔗 Correlations", "📈 Comparisons", "🧪 Statistical Tests"])
+    # Visualization categories
+    viz_type = st.selectbox("Select Visualization Category", 
+                           ["📊 Distribution Plots", "🔗 Relationship Analysis", 
+                            "📉 Comparison Charts", "🎯 Advanced 3D & Animated"])
+    
+    if viz_type == "📊 Distribution Plots":
+        show_distribution_plots(df)
+    elif viz_type == "🔗 Relationship Analysis":
+        show_relationship_analysis(df)
+    elif viz_type == "📉 Comparison Charts":
+        show_comparison_charts(df)
+    elif viz_type == "🎯 Advanced 3D & Animated":
+        show_advanced_plots(df)
+
+def show_distribution_plots(df):
+    """Distribution visualization section."""
+    st.markdown("### 📊 Distribution Analysis")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🎨 Age Distribution Histogram", key="age_hist"):
+            if 'Age' in df.columns:
+                fig = px.histogram(df, x='Age', nbins=40,
+                                 title='Patient Age Distribution',
+                                 color_discrete_sequence=['#636EFA'],
+                                 marginal='box')
+                fig.update_layout(showlegend=False, height=500)
+                st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        if st.button("📊 Diagnosis Pie Chart", key="diag_pie"):
+            if 'Diagnosis' in df.columns:
+                fig = px.pie(df, names='Diagnosis',
+                           title='Cancer Type Distribution',
+                           hole=0.4,
+                           color_discrete_sequence=px.colors.qualitative.Set3)
+                fig.update_traces(textposition='inside', textinfo='percent+label')
+                st.plotly_chart(fig, use_container_width=True)
+    
+    col3, col4 = st.columns(2)
+    
+    with col3:
+        if st.button("🎯 WBC Distribution", key="wbc_dist"):
+            if 'WBC' in df.columns:
+                fig = px.violin(df, y='WBC',
+                              title='WBC Count Distribution',
+                              box=True,
+                              color_discrete_sequence=['#EF553B'])
+                st.plotly_chart(fig, use_container_width=True)
+    
+    with col4:
+        if st.button("📉 Hemoglobin KDE Plot", key="hgb_kde"):
+            if 'Hemoglobin' in df.columns:
+                fig = px.histogram(df, x='Hemoglobin',
+                                 marginal='violin',
+                                 title='Hemoglobin Distribution with KDE',
+                                 color_discrete_sequence=['#00CC96'])
+                st.plotly_chart(fig, use_container_width=True)
+
+def show_relationship_analysis(df):
+    """Relationship analysis section."""
+    st.markdown("### 🔗 Correlation & Relationships")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🔥 Correlation Heatmap", key="corr_heat"):
+            numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+            if len(numeric_cols) >= 2:
+                corr_matrix = df[numeric_cols].corr()
+                
+                fig = go.Figure(data=go.Heatmap(
+                    z=corr_matrix.values,
+                    x=corr_matrix.columns,
+                    y=corr_matrix.columns,
+                    colorscale='RdBu',
+                    zmid=0,
+                    text=np.round(corr_matrix.values, 2),
+                    texttemplate='%{text}',
+                    textfont={"size": 10}
+                ))
+                fig.update_layout(title='Correlation Matrix', height=600)
+                st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        if st.button("📈 Age vs WBC Scatter", key="age_wbc_scatter"):
+            if all(col in df.columns for col in ['Age', 'WBC', 'Diagnosis']):
+                df_clean = df.dropna(subset=['Age', 'WBC', 'Diagnosis'])
+                fig = px.scatter(df_clean, x='Age', y='WBC',
+                               color='Diagnosis',
+                               size='Hemoglobin' if 'Hemoglobin' in df.columns else None,
+                               title='Age vs WBC (sized by Hemoglobin)',
+                               trendline='ols',
+                               hover_data=['Diagnosis'])
+                st.plotly_chart(fig, use_container_width=True)
+    
+    # Pairplot section
+    if st.button("🎨 Generate Pairplot (Numeric Variables)", key="pairplot"):
+        with st.spinner("Creating pairplot..."):
+            numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()[:4]  # Limit to 4 for performance
+            if len(numeric_cols) >= 2:
+                fig = px.scatter_matrix(df[numeric_cols].dropna(),
+                                      title='Pairwise Relationships',
+                                      height=800)
+                st.plotly_chart(fig, use_container_width=True)
+
+def show_comparison_charts(df):
+    """Comparison charts section."""
+    st.markdown("### 📉 Group Comparisons")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("📊 WBC by Diagnosis (Box)", key="wbc_box"):
+            if all(col in df.columns for col in ['Diagnosis', 'WBC']):
+                df_clean = df.dropna(subset=['Diagnosis', 'WBC'])
+                fig = px.box(df_clean, x='Diagnosis', y='WBC',
+                           title='WBC Levels Across Cancer Types',
+                           color='Diagnosis',
+                           points='outliers')
+                fig.update_layout(xaxis_tickangle=-45, showlegend=False)
+                st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        if st.button("🎻 Hemoglobin by Gender", key="hgb_gender"):
+            if all(col in df.columns for col in ['Gender', 'Hemoglobin']):
+                df_clean = df.dropna(subset=['Gender', 'Hemoglobin'])
+                fig = px.violin(df_clean, x='Gender', y='Hemoglobin',
+                              title='Hemoglobin Comparison by Gender',
+                              color='Gender',
+                              box=True,
+                              points='all')
+                st.plotly_chart(fig, use_container_width=True)
+    
+    col3, col4 = st.columns(2)
+    
+    with col3:
+        if st.button("📊 Treatment Outcome Sunburst", key="outcome_sun"):
+            if 'Treatment_Outcome' in df.columns and 'Diagnosis' in df.columns:
+                df_clean = df.dropna(subset=['Treatment_Outcome', 'Diagnosis'])
+                fig = px.sunburst(df_clean, path=['Treatment_Outcome', 'Diagnosis'],
+                                title='Treatment Outcomes by Diagnosis')
+                st.plotly_chart(fig, use_container_width=True)
+    
+    with col4:
+        if st.button("🎯 Risk Category Treemap", key="risk_tree"):
+            if 'Risk_Category' in df.columns and 'Diagnosis' in df.columns:
+                df_clean = df.dropna(subset=['Risk_Category', 'Diagnosis'])
+                fig = px.treemap(df_clean, path=['Risk_Category', 'Diagnosis'],
+                               title='Patient Distribution by Risk & Diagnosis')
+                st.plotly_chart(fig, use_container_width=True)
+
+def show_advanced_plots(df):
+    """Advanced 3D and animated plots."""
+    st.markdown("### 🎯 Advanced 3D & Animated Visualizations")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🌐 3D Scatter Plot", key="3d_scatter"):
+            if all(col in df.columns for col in ['Age', 'WBC', 'Hemoglobin', 'Diagnosis']):
+                df_clean = df.dropna(subset=['Age', 'WBC', 'Hemoglobin', 'Diagnosis'])
+                fig = px.scatter_3d(df_clean, x='Age', y='WBC', z='Hemoglobin',
+                                  color='Diagnosis',
+                                  title='3D View: Age, WBC & Hemoglobin',
+                                  height=700)
+                st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        if st.button("📊 Animated Bubble Chart", key="bubble_anim"):
+            if all(col in df.columns for col in ['Age', 'WBC', 'Diagnosis']):
+                df_clean = df.dropna(subset=['Age', 'WBC', 'Diagnosis'])
+                if 'Platelets' in df.columns:
+                    df_clean = df_clean.dropna(subset=['Platelets'])
+                    fig = px.scatter(df_clean, x='Age', y='WBC',
+                                   size='Platelets',
+                                   color='Diagnosis',
+                                   title='Bubble Chart: Age vs WBC (bubble = Platelets)',
+                                   size_max=50,
+                                   height=600)
+                    st.plotly_chart(fig, use_container_width=True)
+    
+    # Parallel coordinates
+    if st.button("🌈 Parallel Coordinates Plot", key="parallel"):
+        if 'Diagnosis' in df.columns:
+            numeric_cols = ['Age', 'WBC', 'RBC', 'Hemoglobin', 'Platelets']
+            available_cols = [col for col in numeric_cols if col in df.columns]
+            
+            if len(available_cols) >= 3:
+                df_plot = df[available_cols + ['Diagnosis']].dropna()
+                if len(df_plot) > 500:
+                    df_plot = df_plot.sample(500)
+                
+                fig = px.parallel_coordinates(df_plot,
+                                            dimensions=available_cols,
+                                            color='Age',
+                                            title='Parallel Coordinates: Clinical Parameters',
+                                            color_continuous_scale=px.colors.sequential.Viridis)
+                st.plotly_chart(fig, use_container_width=True)
+
+def show_statistical_analysis():
+    """Statistical analysis page."""
+    st.markdown('<h2 class="section-header">🧪 Statistical Analysis & Testing</h2>', unsafe_allow_html=True)
+    
+    if not st.session_state.get('data_loaded', False):
+        st.warning("⚠️ Please load the dataset first.")
+        return
+    
+    df = st.session_state.get('df')
+    
+    tab1, tab2, tab3 = st.tabs(["📊 ANOVA Tests", "📈 T-Tests", "📉 Chi-Square Tests"])
     
     with tab1:
-        st.markdown("### Distribution Analysis")
+        st.markdown("### Analysis of Variance (ANOVA)")
+        st.info("Tests if there are significant differences in means across different groups")
         
-        if 'Diagnosis' in df.columns:
-            if st.button("🔄 Generate Diagnosis Distribution", key="diag_dist"):
-                with st.spinner("Generating chart..."):
-                    fig = px.bar(df['Diagnosis'].value_counts().reset_index(), 
-                               x='index', y='Diagnosis',
-                               title='Blood Cancer Diagnosis Distribution',
-                               labels={'index': 'Diagnosis Type', 'Diagnosis': 'Number of Patients'},
-                               color='Diagnosis')
-                    st.plotly_chart(fig, use_container_width=True)
-        
-        if 'Age' in df.columns:
-            if st.button("🔄 Generate Age Distribution", key="age_dist"):
-                with st.spinner("Generating chart..."):
-                    fig = px.histogram(df, x='Age', nbins=30,
-                                     title='Patient Age Distribution',
-                                     labels={'Age': 'Age (years)'},
-                                     marginal='box')
-                    st.plotly_chart(fig, use_container_width=True)
-        
-        if all(col in df.columns for col in ['WBC', 'Diagnosis']):
-            if st.button("🔄 Generate WBC by Diagnosis", key="wbc_diag"):
-                with st.spinner("Generating chart..."):
-                    df_clean = df.dropna(subset=['WBC', 'Diagnosis'])
-                    fig = px.box(df_clean, x='Diagnosis', y='WBC',
-                               title='WBC Levels by Diagnosis',
-                               color='Diagnosis')
-                    fig.update_layout(xaxis_tickangle=-45, showlegend=False)
-                    st.plotly_chart(fig, use_container_width=True)
-    
-    with tab2:
-        st.markdown("### Correlation Analysis")
-        
-        if st.button("🔄 Generate Correlation Heatmap", key="corr_heat"):
-            with st.spinner("Calculating correlations..."):
-                numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-                
-                if len(numeric_cols) >= 2:
-                    corr_matrix = df[numeric_cols].corr()
-                    
-                    fig = go.Figure(data=go.Heatmap(
-                        z=corr_matrix.values,
-                        x=corr_matrix.columns,
-                        y=corr_matrix.columns,
-                        colorscale='RdBu',
-                        zmid=0,
-                        text=np.round(corr_matrix.values, 2),
-                        texttemplate='%{text}',
-                        textfont={"size": 10}
-                    ))
-                    fig.update_layout(title='Correlation Heatmap', height=600)
-                    st.plotly_chart(fig, use_container_width=True)
-                    
-                    # Show top correlations
-                    st.markdown("#### Strongest Correlations")
-                    corr_pairs = []
-                    for i in range(len(corr_matrix.columns)):
-                        for j in range(i+1, len(corr_matrix.columns)):
-                            corr_pairs.append({
-                                'Variable 1': corr_matrix.columns[i],
-                                'Variable 2': corr_matrix.columns[j],
-                                'Correlation': corr_matrix.iloc[i, j]
-                            })
-                    
-                    corr_df = pd.DataFrame(corr_pairs).sort_values('Correlation', ascending=False, key=abs)
-                    st.dataframe(corr_df.head(10), use_container_width=True)
-                else:
-                    st.error("Not enough numeric columns for correlation analysis")
-    
-    with tab3:
-        st.markdown("### Group Comparisons")
-        
-        if all(col in df.columns for col in ['Gender', 'Age']):
-            if st.button("🔄 Age by Gender Comparison", key="age_gender"):
-                with st.spinner("Generating chart..."):
-                    df_clean = df.dropna(subset=['Gender', 'Age'])
-                    fig = px.box(df_clean, x='Gender', y='Age',
-                               title='Age Distribution by Gender',
-                               color='Gender')
-                    st.plotly_chart(fig, use_container_width=True)
-        
-        if all(col in df.columns for col in ['Risk_Category', 'Hemoglobin']):
-            if st.button("🔄 Hemoglobin by Risk Category", key="hgb_risk"):
-                with st.spinner("Generating chart..."):
-                    df_clean = df.dropna(subset=['Risk_Category', 'Hemoglobin'])
-                    fig = px.violin(df_clean, x='Risk_Category', y='Hemoglobin',
-                                  title='Hemoglobin Levels by Risk Category',
-                                  color='Risk_Category', box=True)
-                    fig.update_layout(showlegend=False)
-                    st.plotly_chart(fig, use_container_width=True)
-    
-    with tab4:
-        st.markdown("### Statistical Testing")
-        
-        if st.button("🔄 Run ANOVA Tests", key="anova_tests"):
-            with st.spinner("Performing statistical tests..."):
+        if st.button("🔬 Run ANOVA Tests", key="run_anova", use_container_width=True, type="primary"):
+            with st.spinner("Performing ANOVA tests..."):
                 if 'Diagnosis' in df.columns:
                     test_vars = ['Age', 'WBC', 'RBC', 'Hemoglobin', 'Platelets']
                     results = []
@@ -329,22 +450,93 @@ def show_analytics():
                     for var in test_vars:
                         if var in df.columns:
                             df_clean = df.dropna(subset=['Diagnosis', var])
-                            groups = [group[var].dropna() for name, group in df_clean.groupby('Diagnosis')]
-                            groups = [g for g in groups if len(g) > 0]
-                            
-                            if len(groups) >= 2:
-                                f_stat, p_value = stats.f_oneway(*groups)
-                                results.append({
-                                    'Variable': var,
-                                    'F-Statistic': f"{f_stat:.4f}",
-                                    'P-Value': f"{p_value:.4e}",
-                                    'Significant': '✅ Yes' if p_value < 0.05 else '❌ No'
-                                })
+                            if len(df_clean) > 0:
+                                groups = [group[var].dropna().values for name, group in df_clean.groupby('Diagnosis') if len(group[var].dropna()) > 0]
+                                
+                                if len(groups) >= 2 and all(len(g) > 0 for g in groups):
+                                    try:
+                                        f_stat, p_value = stats.f_oneway(*groups)
+                                        results.append({
+                                            'Variable': var,
+                                            'F-Statistic': f"{f_stat:.4f}",
+                                            'P-Value': f"{p_value:.6f}",
+                                            'Significant (α=0.05)': '✅ Yes' if p_value < 0.05 else '❌ No',
+                                            'Effect': 'Strong' if p_value < 0.01 else 'Moderate' if p_value < 0.05 else 'None'
+                                        })
+                                    except Exception as e:
+                                        st.error(f"Error testing {var}: {str(e)}")
                     
                     if results:
-                        st.markdown("#### ANOVA Results: Clinical Parameters by Diagnosis")
-                        st.dataframe(pd.DataFrame(results), use_container_width=True)
-                        st.info("P-value < 0.05 indicates statistically significant difference between groups")
+                        st.success(f"✅ Completed {len(results)} ANOVA tests")
+                        results_df = pd.DataFrame(results)
+                        st.dataframe(results_df, use_container_width=True)
+                        
+                        st.markdown("""
+                        **Interpretation:**
+                        - **P-value < 0.05**: Significant difference between groups
+                        - **P-value ≥ 0.05**: No significant difference
+                        - **F-statistic**: Higher values indicate greater between-group variance
+                        """)
+                    else:
+                        st.error("No valid tests could be performed")
+    
+    with tab2:
+        st.markdown("### Independent T-Tests")
+        st.info("Compares means between two groups")
+        
+        if st.button("🔬 Run Gender Comparison T-Tests", key="run_ttest", use_container_width=True, type="primary"):
+            with st.spinner("Performing t-tests..."):
+                if 'Gender' in df.columns:
+                    df_clean = df.dropna(subset=['Gender'])
+                    genders = df_clean['Gender'].unique()
+                    
+                    if len(genders) >= 2:
+                        gender1, gender2 = genders[0], genders[1]
+                        test_vars = ['Age', 'WBC', 'RBC', 'Hemoglobin', 'Platelets']
+                        results = []
+                        
+                        for var in test_vars:
+                            if var in df.columns:
+                                group1 = df_clean[df_clean['Gender'] == gender1][var].dropna()
+                                group2 = df_clean[df_clean['Gender'] == gender2][var].dropna()
+                                
+                                if len(group1) > 1 and len(group2) > 1:
+                                    t_stat, p_value = stats.ttest_ind(group1, group2)
+                                    results.append({
+                                        'Variable': var,
+                                        f'{gender1} Mean': f"{group1.mean():.2f}",
+                                        f'{gender2} Mean': f"{group2.mean():.2f}",
+                                        'T-Statistic': f"{t_stat:.4f}",
+                                        'P-Value': f"{p_value:.6f}",
+                                        'Significant': '✅ Yes' if p_value < 0.05 else '❌ No'
+                                    })
+                        
+                        if results:
+                            st.success(f"✅ Completed {len(results)} t-tests")
+                            st.dataframe(pd.DataFrame(results), use_container_width=True)
+    
+    with tab3:
+        st.markdown("### Chi-Square Tests")
+        st.info("Tests independence between categorical variables")
+        
+        if st.button("🔬 Run Chi-Square Test", key="run_chi", use_container_width=True, type="primary"):
+            with st.spinner("Performing chi-square test..."):
+                if all(col in df.columns for col in ['Gender', 'Risk_Category']):
+                    df_clean = df.dropna(subset=['Gender', 'Risk_Category'])
+                    contingency_table = pd.crosstab(df_clean['Gender'], df_clean['Risk_Category'])
+                    
+                    chi2, p_value, dof, expected = stats.chi2_contingency(contingency_table)
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Chi-Square Statistic", f"{chi2:.4f}")
+                    with col2:
+                        st.metric("P-Value", f"{p_value:.6f}")
+                    with col3:
+                        st.metric("Degrees of Freedom", dof)
+                    
+                    st.markdown("#### Contingency Table")
+                    st.dataframe(contingency_table, use_container_width=True)
 
 def show_export():
     """Export page."""
@@ -356,7 +548,7 @@ def show_export():
     
     df = st.session_state.get('df')
     
-    st.markdown("### Download Options")
+    st.markdown("### 📦 Download Data in Multiple Formats")
     
     col1, col2, col3 = st.columns(3)
     
@@ -411,7 +603,7 @@ def main():
     st.sidebar.markdown("# 🩸 Blood Cancer Dashboard")
     st.sidebar.markdown("---")
     
-    st.sidebar.markdown("### 📂 Project Workflow")
+    st.sidebar.markdown("### 📂 Workflow")
     
     # Load Dataset Button
     if not st.session_state['data_loaded']:
@@ -422,27 +614,25 @@ def main():
                     st.session_state['df_original'] = df.copy()
                     st.session_state['df'] = df.copy()
                     st.session_state['data_loaded'] = True
-                    st.sidebar.success("✅ Dataset loaded!")
+                    st.sidebar.success("✅ Loaded!")
                     st.rerun()
-                else:
-                    st.sidebar.error("❌ Failed to load dataset")
     else:
         st.sidebar.success("✅ Dataset Loaded")
         
         # Clean Dataset Button
         if not st.session_state['data_cleaned']:
             if st.sidebar.button("🧹 Clean Dataset", use_container_width=True, type="primary"):
-                with st.spinner("Cleaning dataset..."):
+                with st.spinner("Cleaning..."):
                     df_clean, _ = clean_data(st.session_state['df_original'])
                     st.session_state['df'] = df_clean
                     st.session_state['data_cleaned'] = True
-                    st.sidebar.success("✅ Dataset cleaned!")
+                    st.sidebar.success("✅ Cleaned!")
                     st.rerun()
         else:
-            st.sidebar.success("✅ Dataset Cleaned")
+            st.sidebar.success("✅ Data Cleaned")
         
         # Reset Button
-        if st.sidebar.button("🔄 Reset Project", use_container_width=True):
+        if st.sidebar.button("🔄 Reset", use_container_width=True):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
@@ -452,7 +642,7 @@ def main():
     # Navigation
     page = st.sidebar.radio(
         "Navigation",
-        ["🏠 Home", "📊 Data Overview", "📈 Analytics", "📥 Export"],
+        ["🏠 Home", "📊 Data Overview", "📈 Visualizations", "🧪 Statistical Analysis", "📥 Export"],
         label_visibility="collapsed"
     )
     
@@ -461,7 +651,7 @@ def main():
         st.sidebar.markdown("---")
         st.sidebar.markdown("### 📊 Quick Stats")
         df = st.session_state['df']
-        st.sidebar.metric("Records", len(df))
+        st.sidebar.metric("Records", f"{len(df):,}")
         st.sidebar.metric("Variables", len(df.columns))
         st.sidebar.metric("Missing", df.isnull().sum().sum())
     
@@ -470,8 +660,10 @@ def main():
         show_home()
     elif page == "📊 Data Overview":
         show_data_overview()
-    elif page == "📈 Analytics":
-        show_analytics()
+    elif page == "📈 Visualizations":
+        show_visualizations()
+    elif page == "🧪 Statistical Analysis":
+        show_statistical_analysis()
     elif page == "📥 Export":
         show_export()
 
