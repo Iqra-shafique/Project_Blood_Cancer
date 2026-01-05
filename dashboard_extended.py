@@ -633,7 +633,7 @@ def main():
             st.sidebar.success("✅ Data Cleaned")
         
         # Reset Button
-        if st.sidebar.button("🔄 Reset", width='stretch')
+        if st.sidebar.button("🔄 Reset", width='stretch'):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
