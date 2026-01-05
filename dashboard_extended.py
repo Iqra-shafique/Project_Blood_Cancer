@@ -52,6 +52,30 @@ def load_data():
     try:
         df = pd.read_csv(file_path)
         
+        # Map actual column names to simplified names for consistent code usage
+        column_mapping = {
+            'Age': 'Age',  # Already correct
+            'Gender': 'Gender',  # Already correct
+            'Total WBC count(/cumm)': 'WBC',
+            'Cancer_Type(AML, ALL, CLL)': 'Diagnosis',
+            'Treatment_Type(Chemotherapy, Radiation)': 'Treatment',
+            'Platelet Count( (/cumm)': 'Platelets',
+            'Treatment_Outcome': 'Treatment_Outcome',
+            'Diagnosis_Result': 'Diagnosis_Result',
+            'Genetic_Data(BCR-ABL, FLT3)': 'Genetic_Data',
+            'Side_Effects': 'Side_Effects'
+        }
+        
+        # Only rename columns that exist
+        rename_dict = {k: v for k, v in column_mapping.items() if k in df.columns}
+        df = df.rename(columns=rename_dict)
+        
+        # Add missing columns if needed (for code compatibility)
+        if 'RBC' not in df.columns:
+            df['RBC'] = np.nan
+        if 'Hemoglobin' not in df.columns:
+            df['Hemoglobin'] = np.nan
+        
         # Convert numeric columns
         numeric_cols = ['WBC', 'RBC', 'Hemoglobin', 'Platelets', 'Age']
         for col in numeric_cols:
