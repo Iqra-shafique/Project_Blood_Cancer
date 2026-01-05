@@ -105,12 +105,13 @@ def clean_data(df):
     numeric_cols = df.select_dtypes(include=[np.number]).columns
     for col in numeric_cols:
         if df[col].isnull().any():
-            df[col].fillna(df[col].median(), inplace=True)
+            df[col] = df[col].fillna(df[col].median())
     
     text_cols = df.select_dtypes(include=['object']).columns
     for col in text_cols:
         if df[col].isnull().any():
-            df[col].fillna(df[col].mode()[0] if len(df[col].mode()) > 0 else 'Unknown', inplace=True)
+            fill_value = df[col].mode()[0] if len(df[col].mode()) > 0 else 'Unknown'
+            df[col] = df[col].fillna(fill_value)
     
     cleaning_report['missing_handled'] = True
     
@@ -191,7 +192,7 @@ def show_data_overview():
     # Dataset preview with toggle
     if st.checkbox("📋 Show Dataset Preview", value=True):
         st.markdown("### First 15 Rows")
-        st.dataframe(df.head(15), use_container_width=True, height=400)
+        st.dataframe(df.head(15), width='stretch', height=400)
     
     # Column information
     if st.checkbox("ℹ️ Show Column Information"):
@@ -212,7 +213,7 @@ def show_data_overview():
     # Interactive statistics
     if st.checkbox("📊 Show Statistical Summary"):
         if st.button("🔄 Generate Statistics", key="gen_stats"):
-            st.dataframe(df.describe(), use_container_width=True)
+            st.dataframe(df.describe(), width='stretch')
 
 def show_visualizations():
     """Advanced visualizations page."""
@@ -252,7 +253,7 @@ def show_distribution_plots(df):
                                  color_discrete_sequence=['#636EFA'],
                                  marginal='box')
                 fig.update_layout(showlegend=False, height=500)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
     
     with col2:
         if st.button("📊 Diagnosis Pie Chart", key="diag_pie"):
@@ -262,7 +263,7 @@ def show_distribution_plots(df):
                            hole=0.4,
                            color_discrete_sequence=px.colors.qualitative.Set3)
                 fig.update_traces(textposition='inside', textinfo='percent+label')
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
     
     col3, col4 = st.columns(2)
     
@@ -273,7 +274,7 @@ def show_distribution_plots(df):
                               title='WBC Count Distribution',
                               box=True,
                               color_discrete_sequence=['#EF553B'])
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
     
     with col4:
         if st.button("📉 Hemoglobin KDE Plot", key="hgb_kde"):
@@ -282,7 +283,7 @@ def show_distribution_plots(df):
                                  marginal='violin',
                                  title='Hemoglobin Distribution with KDE',
                                  color_discrete_sequence=['#00CC96'])
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
 def show_relationship_analysis(df):
     """Relationship analysis section."""
@@ -307,7 +308,7 @@ def show_relationship_analysis(df):
                     textfont={"size": 10}
                 ))
                 fig.update_layout(title='Correlation Matrix', height=600)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
     
     with col2:
         if st.button("📈 Age vs WBC Scatter", key="age_wbc_scatter"):
@@ -319,7 +320,7 @@ def show_relationship_analysis(df):
                                title='Age vs WBC (sized by Hemoglobin)',
                                trendline='ols',
                                hover_data=['Diagnosis'])
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
     
     # Pairplot section
     if st.button("🎨 Generate Pairplot (Numeric Variables)", key="pairplot"):
@@ -329,7 +330,7 @@ def show_relationship_analysis(df):
                 fig = px.scatter_matrix(df[numeric_cols].dropna(),
                                       title='Pairwise Relationships',
                                       height=800)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
 def show_comparison_charts(df):
     """Comparison charts section."""
@@ -346,7 +347,7 @@ def show_comparison_charts(df):
                            color='Diagnosis',
                            points='outliers')
                 fig.update_layout(xaxis_tickangle=-45, showlegend=False)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
     
     with col2:
         if st.button("🎻 Hemoglobin by Gender", key="hgb_gender"):
@@ -357,7 +358,7 @@ def show_comparison_charts(df):
                               color='Gender',
                               box=True,
                               points='all')
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
     
     col3, col4 = st.columns(2)
     
@@ -367,7 +368,7 @@ def show_comparison_charts(df):
                 df_clean = df.dropna(subset=['Treatment_Outcome', 'Diagnosis'])
                 fig = px.sunburst(df_clean, path=['Treatment_Outcome', 'Diagnosis'],
                                 title='Treatment Outcomes by Diagnosis')
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
     
     with col4:
         if st.button("🎯 Risk Category Treemap", key="risk_tree"):
@@ -375,7 +376,7 @@ def show_comparison_charts(df):
                 df_clean = df.dropna(subset=['Risk_Category', 'Diagnosis'])
                 fig = px.treemap(df_clean, path=['Risk_Category', 'Diagnosis'],
                                title='Patient Distribution by Risk & Diagnosis')
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
 def show_advanced_plots(df):
     """Advanced 3D and animated plots."""
@@ -391,7 +392,7 @@ def show_advanced_plots(df):
                                   color='Diagnosis',
                                   title='3D View: Age, WBC & Hemoglobin',
                                   height=700)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
     
     with col2:
         if st.button("📊 Animated Bubble Chart", key="bubble_anim"):
@@ -405,7 +406,7 @@ def show_advanced_plots(df):
                                    title='Bubble Chart: Age vs WBC (bubble = Platelets)',
                                    size_max=50,
                                    height=600)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
     
     # Parallel coordinates
     if st.button("🌈 Parallel Coordinates Plot", key="parallel"):
@@ -423,7 +424,7 @@ def show_advanced_plots(df):
                                             color='Age',
                                             title='Parallel Coordinates: Clinical Parameters',
                                             color_continuous_scale=px.colors.sequential.Viridis)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
 def show_statistical_analysis():
     """Statistical analysis page."""
@@ -441,7 +442,7 @@ def show_statistical_analysis():
         st.markdown("### Analysis of Variance (ANOVA)")
         st.info("Tests if there are significant differences in means across different groups")
         
-        if st.button("🔬 Run ANOVA Tests", key="run_anova", use_container_width=True, type="primary"):
+        if st.button("🔬 Run ANOVA Tests", key="run_anova", width='stretch', type="primary"):
             with st.spinner("Performing ANOVA tests..."):
                 if 'Diagnosis' in df.columns:
                     test_vars = ['Age', 'WBC', 'RBC', 'Hemoglobin', 'Platelets']
@@ -469,7 +470,7 @@ def show_statistical_analysis():
                     if results:
                         st.success(f"✅ Completed {len(results)} ANOVA tests")
                         results_df = pd.DataFrame(results)
-                        st.dataframe(results_df, use_container_width=True)
+                        st.dataframe(results_df, width='stretch')
                         
                         st.markdown("""
                         **Interpretation:**
@@ -484,7 +485,7 @@ def show_statistical_analysis():
         st.markdown("### Independent T-Tests")
         st.info("Compares means between two groups")
         
-        if st.button("🔬 Run Gender Comparison T-Tests", key="run_ttest", use_container_width=True, type="primary"):
+        if st.button("🔬 Run Gender Comparison T-Tests", key="run_ttest", width='stretch', type="primary"):
             with st.spinner("Performing t-tests..."):
                 if 'Gender' in df.columns:
                     df_clean = df.dropna(subset=['Gender'])
@@ -513,13 +514,13 @@ def show_statistical_analysis():
                         
                         if results:
                             st.success(f"✅ Completed {len(results)} t-tests")
-                            st.dataframe(pd.DataFrame(results), use_container_width=True)
+                            st.dataframe(pd.DataFrame(results), width='stretch')
     
     with tab3:
         st.markdown("### Chi-Square Tests")
         st.info("Tests independence between categorical variables")
         
-        if st.button("🔬 Run Chi-Square Test", key="run_chi", use_container_width=True, type="primary"):
+        if st.button("🔬 Run Chi-Square Test", key="run_chi", width='stretch', type="primary"):
             with st.spinner("Performing chi-square test..."):
                 if all(col in df.columns for col in ['Gender', 'Risk_Category']):
                     df_clean = df.dropna(subset=['Gender', 'Risk_Category'])
@@ -536,7 +537,7 @@ def show_statistical_analysis():
                         st.metric("Degrees of Freedom", dof)
                     
                     st.markdown("#### Contingency Table")
-                    st.dataframe(contingency_table, use_container_width=True)
+                    st.dataframe(contingency_table, width='stretch')
 
 def show_export():
     """Export page."""
@@ -559,7 +560,7 @@ def show_export():
             data=csv,
             file_name="blood_cancer_data.csv",
             mime="text/csv",
-            use_container_width=True
+            width='stretch'
         )
     
     with col2:
@@ -571,7 +572,7 @@ def show_export():
             data=xlsx_buffer,
             file_name="blood_cancer_data.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
+            width='stretch'
         )
     
     with col3:
@@ -581,7 +582,7 @@ def show_export():
             data=json_data,
             file_name="blood_cancer_data.json",
             mime="application/json",
-            use_container_width=True
+            width='stretch'
         )
 
 # ==================== MAIN ====================
@@ -607,7 +608,7 @@ def main():
     
     # Load Dataset Button
     if not st.session_state['data_loaded']:
-        if st.sidebar.button("🔄 Load Dataset", use_container_width=True, type="primary"):
+        if st.sidebar.button("🔄 Load Dataset", width='stretch', type="primary"):
             with st.spinner("Loading dataset..."):
                 df = load_data()
                 if df is not None:
@@ -621,7 +622,7 @@ def main():
         
         # Clean Dataset Button
         if not st.session_state['data_cleaned']:
-            if st.sidebar.button("🧹 Clean Dataset", use_container_width=True, type="primary"):
+            if st.sidebar.button("🧹 Clean Dataset", width='stretch', type="primary"):
                 with st.spinner("Cleaning..."):
                     df_clean, _ = clean_data(st.session_state['df_original'])
                     st.session_state['df'] = df_clean
@@ -632,7 +633,7 @@ def main():
             st.sidebar.success("✅ Data Cleaned")
         
         # Reset Button
-        if st.sidebar.button("🔄 Reset", use_container_width=True):
+        if st.sidebar.button("🔄 Reset", width='stretch')
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
