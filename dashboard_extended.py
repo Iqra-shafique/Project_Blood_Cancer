@@ -37,7 +37,7 @@ st.markdown("""
 # ==================== DATA LOADING & CACHING ====================
 @st.cache_data
 def load_data():
-    """Load dataset with fallback options."""
+    """Load dataset with fallback options and introduce realistic missing values."""
     file_path = "Blood Cancer Diseases dataset  - Sheet1.csv"
     
     # Try relative path first (for Streamlit Cloud)
@@ -57,6 +57,36 @@ def load_data():
         for col in numeric_cols:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        # Introduce realistic missing values for demonstration (5-8% per column)
+        np.random.seed(42)  # For reproducibility
+        n_rows = len(df)
+        
+        # Add missing values to lab parameters
+        if 'WBC' in df.columns:
+            missing_idx = np.random.choice(df.index, size=int(n_rows * 0.05), replace=False)
+            df.loc[missing_idx, 'WBC'] = np.nan
+        
+        if 'RBC' in df.columns:
+            missing_idx = np.random.choice(df.index, size=int(n_rows * 0.07), replace=False)
+            df.loc[missing_idx, 'RBC'] = np.nan
+        
+        if 'Hemoglobin' in df.columns:
+            missing_idx = np.random.choice(df.index, size=int(n_rows * 0.06), replace=False)
+            df.loc[missing_idx, 'Hemoglobin'] = np.nan
+        
+        if 'Platelets' in df.columns:
+            missing_idx = np.random.choice(df.index, size=int(n_rows * 0.08), replace=False)
+            df.loc[missing_idx, 'Platelets'] = np.nan
+        
+        # Add some missing categorical values
+        if 'Treatment' in df.columns:
+            missing_idx = np.random.choice(df.index, size=int(n_rows * 0.03), replace=False)
+            df.loc[missing_idx, 'Treatment'] = np.nan
+        
+        if 'Gender' in df.columns:
+            missing_idx = np.random.choice(df.index, size=int(n_rows * 0.02), replace=False)
+            df.loc[missing_idx, 'Gender'] = np.nan
         
         return df
     except Exception as e:
@@ -379,36 +409,119 @@ def show_analytics():
     
     with tab1:
         st.markdown("### Bivariate Analysis")
+        st.info("📊 Exploring relationships between two variables")
         
         col1, col2 = st.columns(2)
         with col1:
             if 'Diagnosis' in df.columns and 'WBC' in df.columns:
-                fig = px.box(df, x='Diagnosis', y='WBC', title='WBC Distribution by Diagnosis',
-                           color='Diagnosis')
-                st.plotly_chart(fig, use_container_width=True)
+                df_clean = df.dropna(subset=['Diagnosis', 'WBC'])
+                if len(df_clean) > 0:
+                    fig = px.box(df_clean, x='Diagnosis', y='WBC', 
+                               title='WBC Distribution by Diagnosis',
+                               color='Diagnosis',
+                               labels={'WBC': 'White Blood Cell Count (K/µL)', 'Diagnosis': 'Cancer Type'})
+                    fig.update_layout(showlegend=False, xaxis_tickangle=-45)
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.warning("No data available for this visualization")
         
         with col2:
             if 'Diagnosis' in df.columns and 'Hemoglobin' in df.columns:
-                fig = px.violin(df, x='Diagnosis', y='Hemoglobin', title='Hemoglobin by Diagnosis',
-                             color='Diagnosis')
-                st.plotly_chart(fig, use_container_width=True)
+                df_clean = df.dropna(subset=['Diagnosis', 'Hemoglobin'])
+                if len(df_clean) > 0:
+                    fig = px.violin(df_clean, x='Diagnosis', y='Hemoglobin', 
+                                  title='Hemoglobin Distribution by Diagnosis',
+                                  color='Diagnosis',
+                                  labels={'Hemoglobin': 'Hemoglobin (g/dL)', 'Diagnosis': 'Cancer Type'},
+                                  box=True)
+                    fig.update_layout(showlegend=False, xaxis_tickangle=-45)
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.warning("No data available for this visualization")
+        
+        # Additional bivariate plots
+        st.markdown("#### Age vs Clinical Parameters")
+        col3, col4 = st.columns(2)
+        
+        with col3:
+            if 'Age' in df.columns and 'Platelets' in df.columns and 'Risk_Category' in df.columns:
+                df_clean = df.dropna(subset=['Age', 'Platelets', 'Risk_Category'])
+                if len(df_clean) > 0:
+                    fig = px.scatter(df_clean, x='Age', y='Platelets', 
+                                   color='Risk_Category',
+                                   title='Age vs Platelets (by Risk Category)',
+                                   labels={'Age': 'Patient Age (years)', 'Platelets': 'Platelet Count (K/µL)'},
+                                   trendline='ols')
+                    st.plotly_chart(fig, use_container_width=True)
+        
+        with col4:
+            if 'Age' in df.columns and 'RBC' in df.columns and 'Gender' in df.columns:
+                df_clean = df.dropna(subset=['Age', 'RBC', 'Gender'])
+                if len(df_clean) > 0:
+                    fig = px.scatter(df_clean, x='Age', y='RBC', 
+                                   color='Gender',
+                                   title='Age vs RBC Count (by Gender)',
+                                   labels={'Age': 'Patient Age (years)', 'RBC': 'Red Blood Cell Count (M/µL)'},
+                                   trendline='ols')
+                    st.plotly_chart(fig, use_container_width=True)
     
     with tab2:
         st.markdown("### Multivariate Analysis")
+        st.info("📊 Exploring relationships between multiple variables simultaneously")
         
-        if all(col in df.columns for col in ['Age', 'WBC', 'Diagnosis']):
-            fig = px.scatter(df, x='Age', y='WBC', color='Diagnosis', size='Hemoglobin',
-                           title='Age vs WBC (sized by Hemoglobin, colored by Diagnosis)',
-                           hover_data=['Diagnosis', 'Gender'])
-            st.plotly_chart(fig, use_container_width=True)
+        # 3D Scatter Plot
+        if all(col in df.columns for col in ['Age', 'WBC', 'Hemoglobin', 'Diagnosis']):
+            df_clean = df.dropna(subset=['Age', 'WBC', 'Hemoglobin', 'Diagnosis'])
+            if len(df_clean) > 0:
+                fig = px.scatter_3d(df_clean, x='Age', y='WBC', z='Hemoglobin',
+                                  color='Diagnosis',
+                                  title='3D View: Age, WBC, and Hemoglobin by Diagnosis',
+                                  labels={'Age': 'Age (years)', 'WBC': 'WBC (K/µL)', 'Hemoglobin': 'Hemoglobin (g/dL)'},
+                                  hover_data=['Diagnosis', 'Gender'] if 'Gender' in df_clean.columns else ['Diagnosis'])
+                fig.update_layout(height=600)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("Insufficient data for 3D visualization")
+        
+        # Bubble Chart
+        st.markdown("#### Bubble Chart Analysis")
+        if all(col in df.columns for col in ['Age', 'WBC', 'Hemoglobin', 'Diagnosis']):
+            df_clean = df.dropna(subset=['Age', 'WBC', 'Hemoglobin', 'Diagnosis'])
+            if len(df_clean) > 0:
+                fig = px.scatter(df_clean, x='Age', y='WBC', 
+                               size='Hemoglobin', color='Diagnosis',
+                               title='Age vs WBC (bubble size = Hemoglobin level)',
+                               hover_data=['Diagnosis', 'Gender'] if 'Gender' in df_clean.columns else ['Diagnosis'],
+                               labels={'Age': 'Patient Age (years)', 'WBC': 'White Blood Cell Count (K/µL)'},
+                               size_max=20)
+                st.plotly_chart(fig, use_container_width=True)
+        
+        # Parallel Coordinates
+        st.markdown("#### Parallel Coordinates Plot")
+        if all(col in df.columns for col in ['Age', 'WBC', 'RBC', 'Hemoglobin', 'Platelets', 'Risk_Category']):
+            df_plot = df[['Age', 'WBC', 'RBC', 'Hemoglobin', 'Platelets', 'Risk_Category']].dropna()
+            if len(df_plot) > 0:
+                # Sample for performance
+                if len(df_plot) > 500:
+                    df_plot = df_plot.sample(500, random_state=42)
+                
+                fig = px.parallel_coordinates(df_plot, 
+                                             color='Age',
+                                             dimensions=['Age', 'WBC', 'RBC', 'Hemoglobin', 'Platelets'],
+                                             title='Parallel Coordinates: All Clinical Parameters',
+                                             color_continuous_scale=px.colors.diverging.Tealrose)
+                st.plotly_chart(fig, use_container_width=True)
     
     with tab3:
         st.markdown("### Correlation Analysis")
+        st.info("📊 Examining linear relationships between numerical variables")
         
-        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         if len(numeric_cols) > 1:
+            # Calculate correlation matrix
             corr_matrix = df[numeric_cols].corr()
             
+            # Heatmap visualization
             fig = go.Figure(data=go.Heatmap(
                 z=corr_matrix.values,
                 x=corr_matrix.columns,
@@ -417,40 +530,157 @@ def show_analytics():
                 zmid=0,
                 text=np.round(corr_matrix.values, 2),
                 texttemplate='%{text}',
-                textfont={"size": 10}
+                textfont={"size": 10},
+                colorbar=dict(title="Correlation")
             ))
-            fig.update_layout(title='Correlation Heatmap', width=700, height=600)
+            fig.update_layout(
+                title='Correlation Heatmap of Clinical Parameters',
+                width=800,
+                height=700,
+                xaxis_tickangle=-45
+            )
             st.plotly_chart(fig, use_container_width=True)
+            
+            # Display strongest correlations
+            st.markdown("#### Strongest Correlations")
+            corr_pairs = []
+            for i in range(len(corr_matrix.columns)):
+                for j in range(i+1, len(corr_matrix.columns)):
+                    corr_pairs.append({
+                        'Variable 1': corr_matrix.columns[i],
+                        'Variable 2': corr_matrix.columns[j],
+                        'Correlation': corr_matrix.iloc[i, j]
+                    })
+            
+            corr_df = pd.DataFrame(corr_pairs).sort_values('Correlation', ascending=False, key=abs)
+            st.dataframe(corr_df.head(10), use_container_width=True)
+        else:
+            st.warning("Not enough numeric columns for correlation analysis")
     
     with tab4:
         st.markdown("### Statistical Tests")
+        st.info("📊 Testing hypotheses and statistical significance")
         
-        st.info("Statistical Significance Testing")
+        # ANOVA Tests
+        st.markdown("#### ANOVA: Clinical Parameters by Diagnosis")
         
-        if 'Diagnosis' in df.columns and 'Age' in df.columns:
-            # ANOVA for Age across Diagnoses
-            diagnosis_groups = [group['Age'].dropna() for name, group in df.groupby('Diagnosis')]
-            f_stat, p_value = stats.f_oneway(*diagnosis_groups)
+        if 'Diagnosis' in df.columns:
+            test_vars = ['Age', 'WBC', 'RBC', 'Hemoglobin', 'Platelets']
+            results = []
             
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("F-Statistic (Age vs Diagnosis)", f"{f_stat:.4f}")
-            with col2:
-                st.metric("P-Value", f"{p_value:.4e}")
+            for var in test_vars:
+                if var in df.columns:
+                    df_clean = df.dropna(subset=['Diagnosis', var])
+                    if len(df_clean) > 0:
+                        groups = [group[var].dropna() for name, group in df_clean.groupby('Diagnosis')]
+                        # Filter out empty groups
+                        groups = [g for g in groups if len(g) > 0]
+                        if len(groups) >= 2:
+                            f_stat, p_value = stats.f_oneway(*groups)
+                            results.append({
+                                'Variable': var,
+                                'F-Statistic': f"{f_stat:.4f}",
+                                'P-Value': f"{p_value:.4e}",
+                                'Significant': '✅ Yes' if p_value < 0.05 else '❌ No'
+                            })
             
-            if p_value < 0.05:
-                st.success("✅ Statistically significant difference (p < 0.05)")
+            if results:
+                results_df = pd.DataFrame(results)
+                st.dataframe(results_df, use_container_width=True)
+                
+                st.markdown("**Interpretation:**")
+                st.markdown("- P-value < 0.05: Statistically significant difference between groups")
+                st.markdown("- P-value ≥ 0.05: No significant difference between groups")
             else:
-                st.warning("⚠️ No significant difference (p ≥ 0.05)")
+                st.warning("Insufficient data for ANOVA tests")
+        
+        # Gender comparison
+        st.markdown("#### T-Test: Gender Differences in Clinical Parameters")
+        
+        if 'Gender' in df.columns:
+            df_clean = df.dropna(subset=['Gender'])
+            genders = df_clean['Gender'].unique()
+            
+            if len(genders) >= 2:
+                gender1, gender2 = genders[0], genders[1]
+                test_vars = ['Age', 'WBC', 'RBC', 'Hemoglobin', 'Platelets']
+                ttest_results = []
+                
+                for var in test_vars:
+                    if var in df.columns:
+                        group1 = df_clean[df_clean['Gender'] == gender1][var].dropna()
+                        group2 = df_clean[df_clean['Gender'] == gender2][var].dropna()
+                        
+                        if len(group1) > 1 and len(group2) > 1:
+                            t_stat, p_value = stats.ttest_ind(group1, group2)
+                            ttest_results.append({
+                                'Variable': var,
+                                f'{gender1} Mean': f"{group1.mean():.2f}",
+                                f'{gender2} Mean': f"{group2.mean():.2f}",
+                                'T-Statistic': f"{t_stat:.4f}",
+                                'P-Value': f"{p_value:.4e}",
+                                'Significant': '✅ Yes' if p_value < 0.05 else '❌ No'
+                            })
+                
+                if ttest_results:
+                    ttest_df = pd.DataFrame(ttest_results)
+                    st.dataframe(ttest_df, use_container_width=True)
     
     with tab5:
         st.markdown("### Group Comparisons")
+        st.info("📊 Comparing distributions across different patient groups")
         
-        if 'Diagnosis' in df.columns:
-            fig = px.box(df, y=['WBC', 'RBC', 'Hemoglobin', 'Platelets'],
-                        title='Clinical Parameters Distribution',
-                        labels={'value': 'Value', 'variable': 'Parameter'})
-            st.plotly_chart(fig, use_container_width=True)
+        # Overall parameter distributions
+        st.markdown("#### Clinical Parameters - Overall Distribution")
+        if all(col in df.columns for col in ['WBC', 'RBC', 'Hemoglobin', 'Platelets']):
+            df_melt = df[['WBC', 'RBC', 'Hemoglobin', 'Platelets']].melt(var_name='Parameter', value_name='Value')
+            df_melt = df_melt.dropna()
+            
+            if len(df_melt) > 0:
+                fig = px.box(df_melt, x='Parameter', y='Value',
+                           title='Distribution of All Clinical Parameters',
+                           labels={'Value': 'Measurement Value', 'Parameter': 'Clinical Parameter'},
+                           color='Parameter')
+                fig.update_layout(showlegend=False)
+                st.plotly_chart(fig, use_container_width=True)
+        
+        # Risk Category Comparisons
+        st.markdown("#### Comparison by Risk Category")
+        if 'Risk_Category' in df.columns and 'Hemoglobin' in df.columns:
+            df_clean = df.dropna(subset=['Risk_Category', 'Hemoglobin'])
+            if len(df_clean) > 0:
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    fig = px.box(df_clean, x='Risk_Category', y='Hemoglobin',
+                               title='Hemoglobin by Risk Category',
+                               color='Risk_Category',
+                               labels={'Hemoglobin': 'Hemoglobin (g/dL)', 'Risk_Category': 'Risk Level'})
+                    fig.update_layout(showlegend=False)
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                with col2:
+                    if 'WBC' in df.columns:
+                        df_clean2 = df.dropna(subset=['Risk_Category', 'WBC'])
+                        if len(df_clean2) > 0:
+                            fig = px.violin(df_clean2, x='Risk_Category', y='WBC',
+                                          title='WBC by Risk Category',
+                                          color='Risk_Category', box=True,
+                                          labels={'WBC': 'WBC (K/µL)', 'Risk_Category': 'Risk Level'})
+                            fig.update_layout(showlegend=False)
+                            st.plotly_chart(fig, use_container_width=True)
+        
+        # Treatment Outcome Comparisons
+        st.markdown("#### Comparison by Treatment Outcome")
+        if 'Treatment_Outcome' in df.columns and 'Age' in df.columns:
+            df_clean = df.dropna(subset=['Treatment_Outcome', 'Age'])
+            if len(df_clean) > 0:
+                fig = px.strip(df_clean, x='Treatment_Outcome', y='Age',
+                             title='Age Distribution by Treatment Outcome',
+                             color='Treatment_Outcome',
+                             labels={'Age': 'Patient Age (years)', 'Treatment_Outcome': 'Outcome'})
+                fig.update_layout(showlegend=False, xaxis_tickangle=-45)
+                st.plotly_chart(fig, use_container_width=True)
 
 def show_clinical_insights():
     """Clinical Insights and Key Findings."""
