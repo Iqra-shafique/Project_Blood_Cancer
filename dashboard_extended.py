@@ -278,6 +278,32 @@ def show_distribution_plots(df):
                                  marginal='box')
                 fig.update_layout(showlegend=False, height=500)
                 st.plotly_chart(fig, width='stretch')
+        
+        if st.button("📈 Age Distribution Line Graph", key="age_line"):
+            if 'Age' in df.columns:
+                # Create age frequency data
+                age_counts = df['Age'].value_counts().sort_index()
+                
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=age_counts.index,
+                    y=age_counts.values,
+                    mode='lines+markers',
+                    name='Patient Count',
+                    line=dict(color='#636EFA', width=3),
+                    marker=dict(size=6, color='#636EFA'),
+                    fill='tozeroy',
+                    fillcolor='rgba(99, 110, 250, 0.2)'
+                ))
+                fig.update_layout(
+                    title='Patient Age Distribution (Line Graph)',
+                    xaxis_title='Age',
+                    yaxis_title='Count',
+                    height=500,
+                    showlegend=False,
+                    hovermode='x unified'
+                )
+                st.plotly_chart(fig, use_container_width=True)
     
     with col2:
         if st.button("📊 Diagnosis Pie Chart", key="diag_pie"):
