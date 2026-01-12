@@ -291,9 +291,7 @@ def show_distribution_plots(df):
                     mode='lines+markers',
                     name='Patient Count',
                     line=dict(color='#636EFA', width=3),
-                    marker=dict(size=6, color='#636EFA'),
-                    fill='tozeroy',
-                    fillcolor='rgba(99, 110, 250, 0.2)'
+                    marker=dict(size=6, color='#636EFA')
                 ))
                 fig.update_layout(
                     title='Patient Age Distribution (Line Graph)',
